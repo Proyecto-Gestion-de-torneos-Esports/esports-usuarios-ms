@@ -11,8 +11,9 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     //Metodos personalizados
+    List<Usuario> findByActivoTrue();
 
-    List<Usuario> findByActivoTrue(); //Lista todos los usuarios que esten activos
+    Optional<Usuario> findByIdAndActivoTrue(Long id); //Lista todos los usuarios por id y que esten activos
 
     Optional<Usuario> findByCorreoAndActivoTrue(String correo); //Busca un usuario mediante su correo
 
