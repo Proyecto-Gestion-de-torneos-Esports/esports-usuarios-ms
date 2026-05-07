@@ -15,6 +15,7 @@ public class UsuarioResponseDTO {
     private String correo;
     private Rol rol;
     private Boolean activo;
+    private Long equipoId;
 
 
 }

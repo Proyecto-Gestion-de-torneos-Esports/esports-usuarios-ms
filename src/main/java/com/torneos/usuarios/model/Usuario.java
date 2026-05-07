@@ -14,7 +14,7 @@ public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "usuario_seq" )
-    @SequenceGenerator(name = "usuario_seq", sequenceName = "USUARAIO_SEQ", allocationSize = 1)
+    @SequenceGenerator(name = "usuario_seq", sequenceName = "USUARIO_SEQ", allocationSize = 1)
     private Long id;
 
     @Column(name ="nombre_usuario", nullable = false, length = 30, unique = true)
@@ -32,5 +32,8 @@ public class Usuario {
 
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
+
+    @Column(name = "equipo_id")
+    private Long equipoId;
 
 }
