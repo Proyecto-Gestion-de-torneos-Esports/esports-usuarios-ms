@@ -25,7 +25,7 @@ public class UsuarioService {
 
     private UsuarioResponseDTO mapToDto(Usuario usuario){
         return new UsuarioResponseDTO(
-                usuario.getId(),
+                usuario.getUsuarioId(),
                 usuario.getNombreUsuario(),
                 usuario.getCorreo(),
                 usuario.getRol(),
@@ -43,7 +43,6 @@ public class UsuarioService {
         usuario.setCorreo(dto.getCorreo());
         usuario.setClave(dto.getClave());
         usuario.setRol(dto.getRol());
-        usuario.setRol(dto.getRol());
         usuario.setEquipoId(dto.getEquipoId());
         usuario.setActivo(true);
 
@@ -60,38 +59,38 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<UsuarioResponseDTO> buscarPorId(Long id){
-        Optional<UsuarioResponseDTO> resultado = usuarioRepository.findByIdAndActivoTrue(id).map(this::mapToDto);
+    public Optional<UsuarioResponseDTO> buscarPorId(Long usuarioId){
+        Optional<UsuarioResponseDTO> resultado = usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId).map(this::mapToDto);
 
         resultado.ifPresentOrElse(
                 dto-> log.info("Usuario '{}' encontrado", dto.getNombreUsuario()),
-                ()-> log.warn("No se encontro ningún usuario activo con el ID: {}", id)
+                ()-> log.warn("No se encontro ningún usuario activo con el ID: {}", usuarioId)
         );
         return resultado;
     }
 
     @Transactional
-    public Optional<UsuarioResponseDTO> actualizar(Long id, UsuarioRequestDTO dto){
-        return usuarioRepository.findByIdAndActivoTrue(id).map(existente->{
+    public Optional<UsuarioResponseDTO> actualizar(Long usuarioId, UsuarioRequestDTO dto){
+        return usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId).map(existente->{
             existente.setNombreUsuario(dto.getNombreUsuario());
             existente.setCorreo(dto.getCorreo());
             existente.setClave(dto.getClave());
             existente.setRol(dto.getRol());
 
             UsuarioResponseDTO respuesta = mapToDto(usuarioRepository.save(existente));
-            log.info("Usuario '{}' (ID: {}) actualizado correctamente", respuesta.getNombreUsuario(), id);
+            log.info("Usuario '{}' (ID: {}) actualizado correctamente", respuesta.getNombreUsuario(), usuarioId);
             return respuesta;
         });
     }
 
     @Transactional
-    public void eliminar(Long id){
-        usuarioRepository.findByIdAndActivoTrue(id).ifPresentOrElse(existente->{
+    public void eliminar(Long usuarioId){
+        usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId).ifPresentOrElse(existente->{
             existente.setActivo(false);
             usuarioRepository.save(existente);
-            log.info("Usuario '{}' (ID: {}) desactivado correctamente", existente.getNombreUsuario(), id);
+            log.info("Usuario '{}' (ID: {}) desactivado correctamente", existente.getNombreUsuario(), usuarioId);
         },()->{
-            log.warn("Eliminación fallida: No se encontró ningún usuario activo con el ID: {}", id);
+            log.warn("Eliminación fallida: No se encontró ningún usuario activo con el ID: {}", usuarioId);
 
         });
     }

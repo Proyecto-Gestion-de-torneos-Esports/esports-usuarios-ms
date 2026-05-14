@@ -23,9 +23,9 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
-    @GetMapping("{id}")
-    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id){
-        return usuarioService.buscarPorId(id).map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
+    @GetMapping("{usuarioId}")
+    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long usuarioId){
+        return usuarioService.buscarPorId(usuarioId).map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -33,20 +33,20 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.guardar(dto));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> actualizar(@PathVariable Long id, @Valid @RequestBody UsuarioRequestDTO dto ){
-        return usuarioService.actualizar(id, dto).map(ResponseEntity::ok).orElseGet(()->ResponseEntity.notFound().build());
+    @PutMapping("/{usuarioId}")
+    public ResponseEntity<UsuarioResponseDTO> actualizar(@PathVariable Long usuarioId, @Valid @RequestBody UsuarioRequestDTO dto ){
+        return usuarioService.actualizar(usuarioId, dto).map(ResponseEntity::ok).orElseGet(()->ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id, @RequestParam String rol){
+    @DeleteMapping("/{usuarioId}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long usuarioId, @RequestParam String rol){
         if (!rol.equalsIgnoreCase("ADMIN") && !rol.equalsIgnoreCase("ARBITRO")){
             throw new RuntimeException("Acceso denegado: solo los administradores Y arbitros pueden dar de baja a un jugador");
         }
-        if (usuarioService.buscarPorId(id).isEmpty()){
+        if (usuarioService.buscarPorId(usuarioId).isEmpty()){
             return ResponseEntity.notFound().build();
         }
-        usuarioService.eliminar(id);
+        usuarioService.eliminar(usuarioId);
         return ResponseEntity.noContent().build();
     }
 
