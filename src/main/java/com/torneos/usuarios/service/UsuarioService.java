@@ -1,15 +1,18 @@
 package com.torneos.usuarios.service;
 
+import com.torneos.usuarios.client.AuditoriaClient;
+import com.torneos.usuarios.client.EquipoClient;
+import com.torneos.usuarios.dto.AuditoriaRequestDTO;
 import com.torneos.usuarios.dto.UsuarioRequestDTO;
 import com.torneos.usuarios.dto.UsuarioResponseDTO;
 import com.torneos.usuarios.model.Usuario;
 import com.torneos.usuarios.repository.UsuarioRepository;
-import com.torneos.usuarios.webclient.EquipoClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final AuditoriaClient auditoriaClient;
     private final EquipoClient equipoClient;
 
     private UsuarioResponseDTO mapToDto(Usuario usuario){
@@ -48,6 +52,9 @@ public class UsuarioService {
 
         UsuarioResponseDTO respuesta = mapToDto(usuarioRepository.save(usuario));
         log.info("Usuario '{}' creado y guardado correctamente", dto.getNombreUsuario());
+
+        String detalleAuditoria = "se creo un nuevo usuario: " + dto.getNombreUsuario() + " con el rol:" + dto.getRol();
+        generarAuditoria(detalleAuditoria);
         return respuesta;
     }
 
@@ -79,6 +86,9 @@ public class UsuarioService {
 
             UsuarioResponseDTO respuesta = mapToDto(usuarioRepository.save(existente));
             log.info("Usuario '{}' (ID: {}) actualizado correctamente", respuesta.getNombreUsuario(), usuarioId);
+
+            String detalleAuditoria = "se actualizo el usuario: " + dto.getNombreUsuario() + " con el ID: " + usuarioId;
+            generarAuditoria(detalleAuditoria);
             return respuesta;
         });
     }
@@ -89,6 +99,8 @@ public class UsuarioService {
             existente.setActivo(false);
             usuarioRepository.save(existente);
             log.info("Usuario '{}' (ID: {}) desactivado correctamente", existente.getNombreUsuario(), usuarioId);
+            String detalleAuditoria = "se elimino el usuario con ID" + usuarioId;
+            generarAuditoria(detalleAuditoria);
         },()->{
             log.warn("Eliminación fallida: No se encontró ningún usuario activo con el ID: {}", usuarioId);
 
@@ -133,5 +145,14 @@ public class UsuarioService {
                 log.info("Equipo ID {} validado con exito", equipoId);
             }
         }
+
+    public void generarAuditoria(String detalle){
+        AuditoriaRequestDTO dto = new AuditoriaRequestDTO();
+        LocalDate ahora = LocalDate.now();
+        dto.setDetalle(detalle);
+        dto.setFecha(ahora);
+        auditoriaClient.generarAuditoria(dto);
+        log.info("Auditoria generada con exito!");
+    }
 
 }
