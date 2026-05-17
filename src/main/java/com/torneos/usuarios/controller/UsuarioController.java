@@ -23,7 +23,7 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
-    @GetMapping("{usuarioId}")
+    @GetMapping("/{usuarioId}")
     public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long usuarioId){
         return usuarioService.buscarPorId(usuarioId).map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
     }
@@ -32,21 +32,14 @@ public class UsuarioController {
     public ResponseEntity<UsuarioResponseDTO> crear(@Valid @RequestBody UsuarioRequestDTO dto){
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.guardar(dto));
     }
-
     @PutMapping("/{usuarioId}")
-    public ResponseEntity<UsuarioResponseDTO> actualizar(@PathVariable Long usuarioId, @Valid @RequestBody UsuarioRequestDTO dto ){
-        return usuarioService.actualizar(usuarioId, dto).map(ResponseEntity::ok).orElseGet(()->ResponseEntity.notFound().build());
+    public ResponseEntity<UsuarioResponseDTO> actualizar(@PathVariable Long usuarioId, @Valid @RequestBody UsuarioRequestDTO dto,
+            @RequestHeader("usuarioId") Long ejecutorId) {
+        return ResponseEntity.ok(usuarioService.actualizar(usuarioId, dto, ejecutorId));
     }
-
     @DeleteMapping("/{usuarioId}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long usuarioId, @RequestParam String rol){
-        if (!rol.equalsIgnoreCase("ADMIN") && !rol.equalsIgnoreCase("ARBITRO")){
-            throw new RuntimeException("Acceso denegado: solo los administradores Y arbitros pueden dar de baja a un jugador");
-        }
-        if (usuarioService.buscarPorId(usuarioId).isEmpty()){
-            return ResponseEntity.notFound().build();
-        }
-        usuarioService.eliminar(usuarioId);
+    public ResponseEntity<Void> eliminar(@PathVariable Long usuarioId, @RequestHeader("usuarioId") Long ejecutorId) {
+        usuarioService.eliminar(usuarioId, ejecutorId);
         return ResponseEntity.noContent().build();
     }
 
@@ -57,12 +50,12 @@ public class UsuarioController {
 
     @GetMapping("/buscar/correo")
     public ResponseEntity<UsuarioResponseDTO> buscarPorCorreo(@RequestParam String correo){
-        return usuarioService.buscarPorCorreo(correo).map(ResponseEntity::ok).orElseGet(()->ResponseEntity.notFound().build());
+        return ResponseEntity.ok(usuarioService.buscarPorCorreo(correo));
     }
 
     @GetMapping("/buscar/nombre")
     public ResponseEntity<UsuarioResponseDTO> buscarPorNombreUsuario(@RequestParam String nombreUsuario){
-        return usuarioService.buscarPorNombreUsuario(nombreUsuario).map(ResponseEntity::ok).orElseGet(()->ResponseEntity.notFound().build());
+        return ResponseEntity.ok(usuarioService.buscarPorNombreUsuario(nombreUsuario));
     }
 
 }

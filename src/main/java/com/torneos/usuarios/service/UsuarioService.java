@@ -45,7 +45,6 @@ public class UsuarioService {
         Usuario usuario = new Usuario();
         usuario.setNombreUsuario(dto.getNombreUsuario());
         usuario.setCorreo(dto.getCorreo());
-        usuario.setClave(dto.getClave());
         usuario.setRol(dto.getRol());
         usuario.setEquipoId(dto.getEquipoId());
         usuario.setActivo(true);
@@ -75,67 +74,80 @@ public class UsuarioService {
         );
         return resultado;
     }
-
     @Transactional
-    public Optional<UsuarioResponseDTO> actualizar(Long usuarioId, UsuarioRequestDTO dto){
-        return usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId).map(existente->{
-            existente.setNombreUsuario(dto.getNombreUsuario());
-            existente.setCorreo(dto.getCorreo());
-            existente.setClave(dto.getClave());
-            existente.setRol(dto.getRol());
+    public UsuarioResponseDTO actualizar(Long usuarioId, UsuarioRequestDTO dto, Long ejecutorId) {
+        Usuario ejecutor = usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("El usuario ejecutor con ID " + ejecutorId + " no existe o está inactivo."));
+        String rolEjecutor = ejecutor.getRol().name();
 
-            UsuarioResponseDTO respuesta = mapToDto(usuarioRepository.save(existente));
-            log.info("Usuario '{}' (ID: {}) actualizado correctamente", respuesta.getNombreUsuario(), usuarioId);
+        if (!"ADMIN".equalsIgnoreCase(rolEjecutor) && !"ARBITRO".equalsIgnoreCase(rolEjecutor)) {
+            log.warn("Intento de actualización no autorizado por el usuario ID: {}", ejecutorId);
+            throw new IllegalArgumentException("Acceso denegado: Tu rol (" + rolEjecutor + ") no tiene permisos para actualizar usuarios.");
+        }
+        Usuario existente = usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId)
+                .orElseThrow(() -> {
+                    log.warn("Actualización fallida: No se encontró ningún usuario activo con el ID: {}", usuarioId);
+                    return new java.util.NoSuchElementException("No se encontró ningún usuario activo con el ID: " + usuarioId);
+                });
+        existente.setNombreUsuario(dto.getNombreUsuario());
+        existente.setCorreo(dto.getCorreo());
+        existente.setRol(dto.getRol());
+        Usuario usuarioGuardado = usuarioRepository.save(existente);
+        UsuarioResponseDTO respuesta = mapToDto(usuarioGuardado);
+        log.info("Usuario '{}' (ID: {}) actualizado correctamente por el ejecutor ID: {}",
+                respuesta.getNombreUsuario(), usuarioId, ejecutorId);
+        String detalleAuditoria = "El usuario ID " + ejecutorId + " actualizó al usuario: " + dto.getNombreUsuario() + " con el ID: " + usuarioId;
+        generarAuditoria(detalleAuditoria);
 
-            String detalleAuditoria = "se actualizo el usuario: " + dto.getNombreUsuario() + " con el ID: " + usuarioId;
-            generarAuditoria(detalleAuditoria);
-            return respuesta;
-        });
+        return respuesta;
     }
-
     @Transactional
-    public void eliminar(Long usuarioId){
-        usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId).ifPresentOrElse(existente->{
-            existente.setActivo(false);
-            usuarioRepository.save(existente);
-            log.info("Usuario '{}' (ID: {}) desactivado correctamente", existente.getNombreUsuario(), usuarioId);
-            String detalleAuditoria = "se elimino el usuario con ID" + usuarioId;
-            generarAuditoria(detalleAuditoria);
-        },()->{
-            log.warn("Eliminación fallida: No se encontró ningún usuario activo con el ID: {}", usuarioId);
-
-        });
+    public void eliminar(Long usuarioId, Long ejecutorId) {
+        Usuario ejecutor = usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("El usuario ejecutor con ID " + ejecutorId + " no existe o está inactivo."));
+        String rol = ejecutor.getRol().name();
+        if (!"ADMIN".equalsIgnoreCase(rol) && !"ARBITRO".equalsIgnoreCase(rol)) {
+            log.warn("Intento de eliminación no autorizado por el usuario ID: {}", ejecutorId);
+            throw new IllegalArgumentException("Acceso denegado: Tu rol (" + rol + ") no tiene permisos para dar de baja a usuarios.");
+        }
+        Usuario existente = usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId)
+                .orElseThrow(() -> {
+                    log.warn("Eliminación fallida: No se encontró ningún usuario activo con el ID: {}", usuarioId);
+                    return new java.util.NoSuchElementException("No se encontró ningún usuario activo con el ID: " + usuarioId);
+                });
+        existente.setActivo(false);
+        usuarioRepository.save(existente);
+        log.info("Usuario '{}' (ID: {}) desactivado correctamente por el ejecutor ID: {}",
+                existente.getNombreUsuario(), usuarioId, ejecutorId);
+        String detalleAuditoria = "El usuario ID " + ejecutorId + " eliminó al usuario con ID " + usuarioId;
+        generarAuditoria(detalleAuditoria);
     }
-
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> obtenerActivos(){
         List<Usuario> usuariosActivos = usuarioRepository.findByActivoTrue();
         log.info("Hay: {} usuarios activos", usuariosActivos.size());
         return usuariosActivos.stream().map(this::mapToDto).collect(Collectors.toList());
     }
-
     @Transactional(readOnly = true)
-    public Optional<UsuarioResponseDTO> buscarPorCorreo(String correo){
-        Optional<UsuarioResponseDTO> resultado = usuarioRepository.findByCorreoAndActivoTrue(correo).map(this::mapToDto);
-
-        resultado.ifPresentOrElse(
-                dto-> log.info("Usuario encontrado con correo: {}", correo),
-                ()-> log.warn("No se encontró ningun usuario activo con el correo: {}", correo)
-        );
-        return resultado;
+    public UsuarioResponseDTO buscarPorCorreo(String correo){
+        return usuarioRepository.findByCorreoAndActivoTrue(correo).map(usuario -> {
+            log.info("Usuario encontrado con correo: {}", correo);
+            return mapToDto(usuario);
+        }) .orElseThrow(()->{
+            log.warn("No se encontró ningun usuario activo con el correo: {}", correo);
+            return new java.util.NoSuchElementException("No se encontro ningun usuario activo con el correo: " + correo);
+        });
     }
-
     @Transactional(readOnly = true)
-    public Optional<UsuarioResponseDTO> buscarPorNombreUsuario(String nombreUsuario){
-        Optional<UsuarioResponseDTO> resultado = usuarioRepository.findByNombreUsuarioAndActivoTrue(nombreUsuario).map(this::mapToDto);
-
-        resultado.ifPresentOrElse(
-                dto->log.info("Usuario encontrado con nombre: {}",nombreUsuario),
-                ()-> log.warn("No se encontró ningun usuario activo con el nombre {}",nombreUsuario)
-        );
-        return resultado;
+    public UsuarioResponseDTO buscarPorNombreUsuario(String nombreUsuario){
+        return usuarioRepository.findByNombreUsuarioAndActivoTrue(nombreUsuario).map(usuario -> {
+            log.info("Usuario encontrado con nombre de usuario: {}", nombreUsuario);
+            return mapToDto(usuario);
+        }).orElseThrow(()->{
+            log.warn("No se encontro ningun usuario activo con el nombre: {}", nombreUsuario);
+            return new java.util.NoSuchElementException("No se encontro ningun usuario activo con el nombre: " + nombreUsuario);
+        });
     }
-
     private void validarEquipo(Long equipoId){
         if (equipoId != null){
                 Map<String, Object> equipo = equipoClient.obtenerEquipoPorId(equipoId);
@@ -145,7 +157,6 @@ public class UsuarioService {
                 log.info("Equipo ID {} validado con exito", equipoId);
             }
         }
-
     public void generarAuditoria(String detalle){
         AuditoriaRequestDTO dto = new AuditoriaRequestDTO();
         LocalDate ahora = LocalDate.now();

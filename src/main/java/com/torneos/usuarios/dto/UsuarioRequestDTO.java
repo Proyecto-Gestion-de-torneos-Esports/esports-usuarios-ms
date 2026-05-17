@@ -19,10 +19,6 @@ public class UsuarioRequestDTO {
     @Email(message = "Debe ser un correo valido")
     private String correo;
 
-    @NotBlank(message = "La clave es obligatoria")
-    @Size(min = 6, message = "La clave debe tener al menos 6 caracteres")
-    private String clave;
-
     @NotNull(message = "El rol es obligatorio")
     private Rol rol;
 

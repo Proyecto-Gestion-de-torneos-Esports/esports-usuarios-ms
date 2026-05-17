@@ -19,9 +19,6 @@ public class Usuario {
     @Column(name ="nombre_usuario", nullable = false, length = 30, unique = true)
     private String nombreUsuario;
 
-    @Column(nullable = false, length = 100)
-    private String clave;
-
     @Column(nullable = false, length = 100, unique = true)
     private String correo;
 
