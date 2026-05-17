@@ -27,6 +27,7 @@ public class UsuarioService {
     private final AuditoriaClient auditoriaClient;
     private final EquipoClient equipoClient;
 
+    //Usuario con sus respectivos atributos
     private UsuarioResponseDTO mapToDto(Usuario usuario){
         return new UsuarioResponseDTO(
                 usuario.getUsuarioId(),
@@ -37,7 +38,7 @@ public class UsuarioService {
                 usuario.getEquipoId()
         );
     }
-
+    //creamos un usuarios y el campo activo al iniciar siempre sera true y mandamos a auditoria.
     @Transactional
     public UsuarioResponseDTO guardar(UsuarioRequestDTO dto){
         validarEquipo(dto.getEquipoId());
@@ -50,13 +51,16 @@ public class UsuarioService {
         usuario.setActivo(true);
 
         UsuarioResponseDTO respuesta = mapToDto(usuarioRepository.save(usuario));
+        /* Mandamos un log para guardar lo que esta haciendo el sistema por debajo,
+         No confundir con los mensajes que van a los microservicios*/
         log.info("Usuario '{}' creado y guardado correctamente", dto.getNombreUsuario());
 
         String detalleAuditoria = "se creo un nuevo usuario: " + dto.getNombreUsuario() + " con el rol:" + dto.getRol();
         generarAuditoria(detalleAuditoria);
         return respuesta;
     }
-
+    /*se listan todos.El campo transactional con readOnly true
+     estamos diciendo que el metodo a continuacion solo es por ejemplo listar, buscar, etc.*/
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listarTodos(){
         List<Usuario> usuarios = usuarioRepository.findAll();
@@ -96,11 +100,12 @@ public class UsuarioService {
         UsuarioResponseDTO respuesta = mapToDto(usuarioGuardado);
         log.info("Usuario '{}' (ID: {}) actualizado correctamente por el ejecutor ID: {}",
                 respuesta.getNombreUsuario(), usuarioId, ejecutorId);
-        String detalleAuditoria = "El usuario ID " + ejecutorId + " actualizó al usuario: " + dto.getNombreUsuario() + " con el ID: " + usuarioId;
+        String detalleAuditoria = "Se actualizo el Usuario con el ID: " + usuarioId;
         generarAuditoria(detalleAuditoria);
 
         return respuesta;
     }
+    //Metodo con transactional sin readOnly true porque estamos realizando una accion que requiere ingresar datos
     @Transactional
     public void eliminar(Long usuarioId, Long ejecutorId) {
         Usuario ejecutor = usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)
@@ -119,7 +124,7 @@ public class UsuarioService {
         usuarioRepository.save(existente);
         log.info("Usuario '{}' (ID: {}) desactivado correctamente por el ejecutor ID: {}",
                 existente.getNombreUsuario(), usuarioId, ejecutorId);
-        String detalleAuditoria = "El usuario ID " + ejecutorId + " eliminó al usuario con ID " + usuarioId;
+        String detalleAuditoria = "Se elimino el usuario con ID " + usuarioId;
         generarAuditoria(detalleAuditoria);
     }
     @Transactional(readOnly = true)
