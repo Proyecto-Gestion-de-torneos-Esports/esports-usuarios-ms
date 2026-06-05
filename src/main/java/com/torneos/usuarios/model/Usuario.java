@@ -29,7 +29,10 @@ public class Usuario {
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
 
-    @Column(name = "equipo_id")
+    /*este campo lo dejo como true porque no es necesario que un usuario se registre en un equipo altiro,
+    lo puede hacer pero no es necesario por eso se complemente con el metodo en el microservicio de equipos
+    el cual es inscribirIntegrante*/
+    @Column(name = "equipo_id", nullable = true)
     private Long equipoId;
 
 }

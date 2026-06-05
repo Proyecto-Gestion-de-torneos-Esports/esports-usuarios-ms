@@ -22,7 +22,6 @@ public class UsuarioRequestDTO {
     @NotNull(message = "El rol es obligatorio")
     private Rol rol;
 
-    @NotNull(message = "El ID del equipo es obligatorio")
     @Positive(message = "El ID del equipo debe ser mayor a cero")
     private Long equipoId;
 }
