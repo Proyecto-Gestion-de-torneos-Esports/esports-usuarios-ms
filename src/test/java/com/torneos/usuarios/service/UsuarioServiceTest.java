@@ -13,27 +13,35 @@ import com.torneos.usuarios.model.Usuario;
 import com.torneos.usuarios.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class UsuarioServiceTest {
 
-    @Autowired UsuarioService usuarioService;
 
-    @MockitoBean
+    @Mock
     private UsuarioRepository usuarioRepository;
 
-    @MockitoBean
+    @Mock
     private AuditoriaClient auditoriaClient;
 
-    @MockitoBean
+    @Mock
     private EquipoClient equipoClient;
+
+    @InjectMocks
+    private UsuarioService usuarioService;
+
 
     private Usuario usuarioAdmin;
     private Usuario usuarioNormal;
@@ -67,7 +75,8 @@ public class UsuarioServiceTest {
     public void testGuardarUsuarioExitoso(){
         when(equipoClient.obtenerEquipoPorId(10L)).thenReturn(Map.of("id", 10L, "nombre", "Equipo FC"));
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioNormal);
-        doNothing().when(auditoriaClient).generarAuditoria(any(AuditoriaRequestDTO.class));
+        //doNothing().when(auditoriaClient).generarAuditoria(any(AuditoriaRequestDTO.class));
+        when(auditoriaClient.generarAuditoria(any(AuditoriaRequestDTO.class))).thenReturn(null);
 
         UsuarioResponseDTO response = usuarioService.guardar(requestDTO);
 
@@ -86,7 +95,8 @@ public class UsuarioServiceTest {
         when(usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)).thenReturn(Optional.of(usuarioAdmin));
         when(usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioObjetivoId)).thenReturn(Optional.of(usuarioNormal));
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioNormal);
-        doNothing().when(auditoriaClient).generarAuditoria(any(AuditoriaRequestDTO.class));
+        //doNothing().when(auditoriaClient).generarAuditoria(any(AuditoriaRequestDTO.class));
+        when(auditoriaClient.generarAuditoria(any(AuditoriaRequestDTO.class))).thenReturn(null);
 
         UsuarioResponseDTO response = usuarioService.actualizar(usuarioObjetivoId, requestDTO, ejecutorId);
         assertNotNull(response);
@@ -115,7 +125,8 @@ public class UsuarioServiceTest {
         when(usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)).thenReturn(Optional.of(usuarioAdmin));
         when(usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioObjetivoId)).thenReturn(Optional.of(usuarioNormal));
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioNormal);
-        doNothing().when(auditoriaClient).generarAuditoria(any(AuditoriaRequestDTO.class));
+        //doNothing().when(auditoriaClient).generarAuditoria(any(AuditoriaRequestDTO.class));
+        when(auditoriaClient.generarAuditoria(any(AuditoriaRequestDTO.class))).thenReturn(null);
 
         usuarioService.eliminar(usuarioObjetivoId, ejecutorId);
         assertFalse(usuarioNormal.getActivo()); //Aqui verificamos el borrado logico, mantengo esa forma de borrado.
