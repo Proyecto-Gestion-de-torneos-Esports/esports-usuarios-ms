@@ -155,13 +155,13 @@ public class UsuarioService {
     }
     private void validarEquipo(Long equipoId){
         if (equipoId != null){
-                Map<String, Object> equipo = equipoClient.obtenerEquipoPorId(equipoId);
-                if (equipo == null || equipo.isEmpty()){
-                    throw new RuntimeException("El equipo no existe");
-                }
-                log.info("Equipo ID {} validado con exito", equipoId);
+            Map<String, Object> equipo = equipoClient.obtenerEquipoPorId(equipoId);
+            if (equipo == null || equipo.isEmpty()){
+                throw new RuntimeException("El equipo no existe");
             }
+            log.info("Equipo ID {} validado con exito", equipoId);
         }
+    }
     public void generarAuditoria(String detalle){
         AuditoriaRequestDTO dto = new AuditoriaRequestDTO();
         LocalDate ahora = LocalDate.now();
