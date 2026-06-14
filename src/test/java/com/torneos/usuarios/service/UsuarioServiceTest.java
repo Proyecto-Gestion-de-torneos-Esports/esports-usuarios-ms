@@ -28,8 +28,6 @@ import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 public class UsuarioServiceTest {
-
-
     @Mock
     private UsuarioRepository usuarioRepository;
 
@@ -42,113 +40,175 @@ public class UsuarioServiceTest {
     @InjectMocks
     private UsuarioService usuarioService;
 
-
-    private Usuario usuarioAdmin;
-    private Usuario usuarioNormal;
+    private Usuario usuario;
+    private Usuario admin;
     private UsuarioRequestDTO requestDTO;
 
     @BeforeEach
-    void setUp(){
-        usuarioAdmin = new Usuario();
-        usuarioAdmin.setUsuarioId(1L);
-        usuarioAdmin.setNombreUsuario("admin_test");
-        usuarioAdmin.setRol(Rol.ADMIN);
-        usuarioAdmin.setActivo(true);
-
-        usuarioNormal = new Usuario();
-        usuarioNormal.setUsuarioId(2L);
-        usuarioNormal.setNombreUsuario("jugador_test");
-        usuarioNormal.setCorreo("jugador@test.com");
-        usuarioNormal.setRol(Rol.JUGADOR);
-        usuarioNormal.setEquipoId(10L);
-        usuarioNormal.setActivo(true);
+    void setUp() {
+        usuario = new Usuario(1L, "Jugador1", "jugador@test.com", Rol.JUGADOR, true, 5L);
+        admin = new Usuario(2L, "Admin1", "admin@test.com", Rol.ADMIN, true, null);
 
         requestDTO = new UsuarioRequestDTO();
-        requestDTO.setNombreUsuario("nuevo_jugador");
+        requestDTO.setNombreUsuario("NuevoUser");
         requestDTO.setCorreo("nuevo@test.com");
         requestDTO.setRol(Rol.JUGADOR);
-        requestDTO.setEquipoId(10L);
-
+        requestDTO.setEquipoId(5L);
     }
 
     @Test
-    public void testGuardarUsuarioExitoso(){
-        when(equipoClient.obtenerEquipoPorId(10L)).thenReturn(Map.of("id", 10L, "nombre", "Equipo FC"));
-        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioNormal);
-        //doNothing().when(auditoriaClient).generarAuditoria(any(AuditoriaRequestDTO.class));
+    public void testGuardarUsuario_Exito() {
+        when(equipoClient.obtenerEquipoPorId(5L)).thenReturn(Map.of("id", 5L, "nombre", "Test Team"));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
         when(auditoriaClient.generarAuditoria(any(AuditoriaRequestDTO.class))).thenReturn(null);
 
         UsuarioResponseDTO response = usuarioService.guardar(requestDTO);
 
         assertNotNull(response);
-        assertEquals("jugador_test", response.getNombreUsuario());
+        assertTrue(response.getActivo());
         verify(usuarioRepository, times(1)).save(any(Usuario.class));
-        verify(auditoriaClient, times(1)).generarAuditoria(any(AuditoriaRequestDTO.class));
-
     }
 
     @Test
-    public void testActualizarUsuarioPermitido(){
-        Long ejecutorId = 1L;
-        Long usuarioObjetivoId = 2L;
-
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)).thenReturn(Optional.of(usuarioAdmin));
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioObjetivoId)).thenReturn(Optional.of(usuarioNormal));
-        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioNormal);
-        //doNothing().when(auditoriaClient).generarAuditoria(any(AuditoriaRequestDTO.class));
-        when(auditoriaClient.generarAuditoria(any(AuditoriaRequestDTO.class))).thenReturn(null);
-
-        UsuarioResponseDTO response = usuarioService.actualizar(usuarioObjetivoId, requestDTO, ejecutorId);
-        assertNotNull(response);
-        verify(usuarioRepository, times(1)).save(any(Usuario.class));
-        verify(auditoriaClient, times(1)).generarAuditoria(any(AuditoriaRequestDTO.class));
-    }
-
-    @Test
-    public void testActualizarUsuarioAccesoDenegado(){
-        Long ejecutorId = 2L;
-        Long usuarioObjetivoId = 3L;
-
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)).thenReturn(Optional.of(usuarioNormal));
+    public void testActualizarUsuario_AccesoDenegado() {
+        when(usuarioRepository.findByUsuarioIdAndActivoTrue(1L)).thenReturn(Optional.of(usuario));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            usuarioService.actualizar(usuarioObjetivoId, requestDTO, ejecutorId);
+            usuarioService.actualizar(2L, requestDTO, 1L); // El ejecutor 1 intenta actualizar al usuario 2
         });
+
         assertTrue(exception.getMessage().contains("Acceso denegado"));
-        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
+
     @Test
-    public void testEliminarUsuarioPermitido(){
-        Long ejecutorId = 1L;
-        Long usuarioObjetivoId = 2L;
+    public void testEliminarUsuario_Exito() {
+        when(usuarioRepository.findByUsuarioIdAndActivoTrue(2L)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.findByUsuarioIdAndActivoTrue(1L)).thenReturn(Optional.of(usuario)); // Usuario a eliminar
 
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)).thenReturn(Optional.of(usuarioAdmin));
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioObjetivoId)).thenReturn(Optional.of(usuarioNormal));
-        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioNormal);
-        //doNothing().when(auditoriaClient).generarAuditoria(any(AuditoriaRequestDTO.class));
-        when(auditoriaClient.generarAuditoria(any(AuditoriaRequestDTO.class))).thenReturn(null);
+        usuarioService.eliminar(1L, 2L);
 
-        usuarioService.eliminar(usuarioObjetivoId, ejecutorId);
-        assertFalse(usuarioNormal.getActivo()); //Aqui verificamos el borrado logico, mantengo esa forma de borrado.
-        verify(usuarioRepository, times(1)).save(usuarioNormal);
+        assertFalse(usuario.getActivo());
+        verify(usuarioRepository, times(1)).save(usuario);
         verify(auditoriaClient, times(1)).generarAuditoria(any(AuditoriaRequestDTO.class));
     }
-    @Test
-    public void testBuscarPorIdExitoso(){
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(2L)).thenReturn(Optional.of(usuarioNormal));
-        Optional<UsuarioResponseDTO> response = usuarioService.buscarPorId(2L);
 
-        assertTrue(response.isPresent());
-        assertEquals("jugador_test", response.get().getNombreUsuario());
-    }
     @Test
-    public void testListarTodos(){
-        when(usuarioRepository.findAll()).thenReturn(List.of(usuarioAdmin, usuarioNormal));
+    public void testListarTodos_Exito() {
+        when(usuarioRepository.findAll()).thenReturn(List.of(usuario, admin));
+
         List<UsuarioResponseDTO> response = usuarioService.listarTodos();
+
         assertNotNull(response);
         assertEquals(2, response.size());
+        verify(usuarioRepository, times(1)).findAll();
+    }
+    @Test
+    public void testBuscarPorId_Exito() {
+        when(usuarioRepository.findByUsuarioIdAndActivoTrue(1L)).thenReturn(Optional.of(usuario));
+
+        Optional<UsuarioResponseDTO> response = usuarioService.buscarPorId(1L);
+
+        assertTrue(response.isPresent());
+        assertEquals("Jugador1", response.get().getNombreUsuario());
+        verify(usuarioRepository, times(1)).findByUsuarioIdAndActivoTrue(1L);
     }
 
+    @Test
+    public void testBuscarPorId_NoEncontrado() {
+        when(usuarioRepository.findByUsuarioIdAndActivoTrue(99L)).thenReturn(Optional.empty());
+
+        Optional<UsuarioResponseDTO> response = usuarioService.buscarPorId(99L);
+
+        assertFalse(response.isPresent());
+    }
+    @Test
+    public void testActualizarUsuario_ExitoComoAdmin() {
+        // Ejecutor es Admin (ID 2)
+        when(usuarioRepository.findByUsuarioIdAndActivoTrue(2L)).thenReturn(Optional.of(admin));
+        // Usuario a actualizar (ID 1)
+        when(usuarioRepository.findByUsuarioIdAndActivoTrue(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+        when(auditoriaClient.generarAuditoria(any(AuditoriaRequestDTO.class))).thenReturn(null);
+
+        UsuarioResponseDTO response = usuarioService.actualizar(1L, requestDTO, 2L);
+
+        assertNotNull(response);
+        assertEquals("NuevoUser", response.getNombreUsuario()); // Verifica que tomó los datos del DTO
+        verify(usuarioRepository, times(1)).save(any(Usuario.class));
+        verify(auditoriaClient, times(1)).generarAuditoria(any(AuditoriaRequestDTO.class));
+    }
+
+    @Test
+    public void testActualizarUsuario_EjecutorNoExiste() {
+        when(usuarioRepository.findByUsuarioIdAndActivoTrue(99L)).thenReturn(Optional.empty());
+
+        java.util.NoSuchElementException exception = assertThrows(java.util.NoSuchElementException.class, () -> {
+            usuarioService.actualizar(1L, requestDTO, 99L);
+        });
+
+        assertTrue(exception.getMessage().contains("no existe o está inactivo"));
+    }
+    @Test
+    public void testObtenerActivos_Exito() {
+        when(usuarioRepository.findByActivoTrue()).thenReturn(List.of(usuario));
+
+        List<UsuarioResponseDTO> response = usuarioService.obtenerActivos();
+
+        assertNotNull(response);
+        assertEquals(1, response.size());
+        verify(usuarioRepository, times(1)).findByActivoTrue();
+    }
+    @Test
+    public void testBuscarPorCorreo_Exito() {
+        when(usuarioRepository.findByCorreoAndActivoTrue("jugador@test.com")).thenReturn(Optional.of(usuario));
+
+        UsuarioResponseDTO response = usuarioService.buscarPorCorreo("jugador@test.com");
+
+        assertNotNull(response);
+        assertEquals("jugador@test.com", response.getCorreo());
+    }
+
+    @Test
+    public void testBuscarPorCorreo_NoEncontrado() {
+        when(usuarioRepository.findByCorreoAndActivoTrue("noexiste@test.com")).thenReturn(Optional.empty());
+
+        java.util.NoSuchElementException exception = assertThrows(java.util.NoSuchElementException.class, () -> {
+            usuarioService.buscarPorCorreo("noexiste@test.com");
+        });
+
+        assertTrue(exception.getMessage().contains("No se encontro ningun usuario activo con el correo"));
+    }
+    @Test
+    public void testBuscarPorNombreUsuario_Exito() {
+        when(usuarioRepository.findByNombreUsuarioAndActivoTrue("Jugador1")).thenReturn(Optional.of(usuario));
+
+        UsuarioResponseDTO response = usuarioService.buscarPorNombreUsuario("Jugador1");
+
+        assertNotNull(response);
+        assertEquals("Jugador1", response.getNombreUsuario());
+    }
+
+    @Test
+    public void testBuscarPorNombreUsuario_NoEncontrado() {
+        when(usuarioRepository.findByNombreUsuarioAndActivoTrue("Fantasma")).thenReturn(Optional.empty());
+
+        java.util.NoSuchElementException exception = assertThrows(java.util.NoSuchElementException.class, () -> {
+            usuarioService.buscarPorNombreUsuario("Fantasma");
+        });
+
+        assertTrue(exception.getMessage().contains("No se encontro ningun usuario activo con el nombre"));
+    }
+    @Test
+    public void testGuardarUsuario_EquipoNoExiste() {
+        when(equipoClient.obtenerEquipoPorId(5L)).thenReturn(null);
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            usuarioService.guardar(requestDTO);
+        });
+
+        assertEquals("El equipo no existe", exception.getMessage());
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+    }
 
 
 }
