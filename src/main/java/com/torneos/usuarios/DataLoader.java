@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
+
 @Profile("dev")
 @Component
 public class DataLoader implements CommandLineRunner {
@@ -30,8 +31,12 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("Iniciando DataLoader: Generando datos falsos de Usuarios...");
 
         // esto me genera 30 usuarios para probar
-        for (int i = 0; i < 30; i++) {
+        // Ajustamos el ciclo para que 'i' nos sirva como ID (del 1 al 30)
+        for (int i = 1; i <= 30; i++) {
             Usuario usuario = new Usuario();
+
+            // ASIGNACIÓN MANUAL DEL ID (Soluciona el error org.hibernate.id.IdentifierGenerationException)
+            usuario.setUsuarioId((long) i);
 
             //creacion de nombres con datafaker
             usuario.setNombreUsuario(faker.name().username());
@@ -50,12 +55,9 @@ public class DataLoader implements CommandLineRunner {
                 usuario.setEquipoId(null);
             }
 
-            //el id no se hace nada ya que por defecto es autoincremental
-
             usuarioRepository.save(usuario);
         }
 
         System.out.println("¡DataLoader finalizado! 30 usuarios falsos generados con éxito.");
     }
-
 }
