@@ -32,7 +32,7 @@ public class DataLoader implements CommandLineRunner {
         for (int i = 1; i <= 30; i++) {
             Usuario usuario = new Usuario();
 
-            usuario.setUsuarioId((long) i);
+            usuario.setIdUsuario((long) i);
 
             usuario.setNombreUsuario(faker.name().username());
             usuario.setCorreo(faker.internet().emailAddress());

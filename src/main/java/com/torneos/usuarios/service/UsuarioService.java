@@ -30,7 +30,7 @@ public class UsuarioService {
     //Usuario con sus respectivos atributos
     private UsuarioResponseDTO mapToDto(Usuario usuario){
         return new UsuarioResponseDTO(
-                usuario.getUsuarioId(),
+                usuario.getIdUsuario(),
                 usuario.getNombreUsuario(),
                 usuario.getCorreo(),
                 usuario.getRol(),
@@ -44,7 +44,7 @@ public class UsuarioService {
         validarEquipo(dto.getEquipoId());
 
         Usuario usuario = new Usuario();
-        usuario.setUsuarioId(dto.getUsuarioId());
+        usuario.setIdUsuario(dto.getUsuarioId());
         usuario.setNombreUsuario(dto.getNombreUsuario());
         usuario.setCorreo(dto.getCorreo());
         usuario.setRol(dto.getRol());
@@ -70,18 +70,18 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<UsuarioResponseDTO> buscarPorId(Long usuarioId){
-        Optional<UsuarioResponseDTO> resultado = usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId).map(this::mapToDto);
+    public Optional<UsuarioResponseDTO> buscarPorId(Long idUsuario){
+        Optional<UsuarioResponseDTO> resultado = usuarioRepository.findByIdUsuarioAndActivoTrue(idUsuario).map(this::mapToDto);
 
         resultado.ifPresentOrElse(
                 dto-> log.info("Usuario '{}' encontrado", dto.getNombreUsuario()),
-                ()-> log.warn("No se encontro ningún usuario activo con el ID: {}", usuarioId)
+                ()-> log.warn("No se encontro ningún usuario activo con el ID: {}", idUsuario)
         );
         return resultado;
     }
     @Transactional
     public UsuarioResponseDTO actualizar(Long usuarioId, UsuarioRequestDTO dto, Long ejecutorId) {
-        Usuario ejecutor = usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)
+        Usuario ejecutor = usuarioRepository.findByIdUsuarioAndActivoTrue(ejecutorId)
                 .orElseThrow(() -> new java.util.NoSuchElementException("El usuario ejecutor con ID " + ejecutorId + " no existe o está inactivo."));
         String rolEjecutor = ejecutor.getRol().name();
 
@@ -89,7 +89,7 @@ public class UsuarioService {
             log.warn("Intento de actualización no autorizado por el usuario ID: {}", ejecutorId);
             throw new IllegalArgumentException("Acceso denegado: Tu rol (" + rolEjecutor + ") no tiene permisos para actualizar usuarios.");
         }
-        Usuario existente = usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId)
+        Usuario existente = usuarioRepository.findByIdUsuarioAndActivoTrue(usuarioId)
                 .orElseThrow(() -> {
                     log.warn("Actualización fallida: No se encontró ningún usuario activo con el ID: {}", usuarioId);
                     return new java.util.NoSuchElementException("No se encontró ningún usuario activo con el ID: " + usuarioId);
@@ -109,14 +109,14 @@ public class UsuarioService {
     //Metodo con transactional sin readOnly true porque estamos realizando una accion que requiere ingresar datos
     @Transactional
     public void eliminar(Long usuarioId, Long ejecutorId) {
-        Usuario ejecutor = usuarioRepository.findByUsuarioIdAndActivoTrue(ejecutorId)
+        Usuario ejecutor = usuarioRepository.findByIdUsuarioAndActivoTrue(ejecutorId)
                 .orElseThrow(() -> new java.util.NoSuchElementException("El usuario ejecutor con ID " + ejecutorId + " no existe o está inactivo."));
         String rol = ejecutor.getRol().name();
         if (!"ADMIN".equalsIgnoreCase(rol) && !"ARBITRO".equalsIgnoreCase(rol)) {
             log.warn("Intento de eliminación no autorizado por el usuario ID: {}", ejecutorId);
             throw new IllegalArgumentException("Acceso denegado: Tu rol (" + rol + ") no tiene permisos para dar de baja a usuarios.");
         }
-        Usuario existente = usuarioRepository.findByUsuarioIdAndActivoTrue(usuarioId)
+        Usuario existente = usuarioRepository.findByIdUsuarioAndActivoTrue(usuarioId)
                 .orElseThrow(() -> {
                     log.warn("Eliminación fallida: No se encontró ningún usuario activo con el ID: {}", usuarioId);
                     return new java.util.NoSuchElementException("No se encontró ningún usuario activo con el ID: " + usuarioId);
