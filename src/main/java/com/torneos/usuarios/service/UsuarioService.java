@@ -44,6 +44,7 @@ public class UsuarioService {
         validarEquipo(dto.getEquipoId());
 
         Usuario usuario = new Usuario();
+        usuario.setUsuarioId(dto.getUsuarioId());
         usuario.setNombreUsuario(dto.getNombreUsuario());
         usuario.setCorreo(dto.getCorreo());
         usuario.setRol(dto.getRol());

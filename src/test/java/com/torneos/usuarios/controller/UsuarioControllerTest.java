@@ -3,6 +3,7 @@ package com.torneos.usuarios.controller;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.torneos.usuarios.assemblers.UsuariosModelAssembler;
@@ -18,15 +19,16 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Optional;
 
-
 @WebMvcTest(UsuarioController.class)
 @Import(UsuariosModelAssembler.class)
 public class UsuarioControllerTest {
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -49,7 +51,9 @@ public class UsuarioControllerTest {
         requestDTO.setRol(Rol.ADMIN);
         requestDTO.setEquipoId(5L);
     }
+
     @Test
+    @WithMockUser(roles = "ADMIN") // Simulamos que entra un ADMIN
     public void testBuscarPorId() throws Exception {
         when(usuarioService.buscarPorId(1L)).thenReturn(Optional.of(responseDTO));
 
@@ -60,7 +64,9 @@ public class UsuarioControllerTest {
                 .andExpect(jsonPath("$._links.self.href").exists())
                 .andExpect(jsonPath("$._links.todos-los-usuarios.href").exists());
     }
+
     @Test
+    @WithMockUser(roles = "ADMIN")
     public void testListarTodos() throws Exception {
         when(usuarioService.listarTodos()).thenReturn(List.of(responseDTO));
 
@@ -70,7 +76,9 @@ public class UsuarioControllerTest {
                 .andExpect(jsonPath("$._embedded").exists())
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
+
     @Test
+    @WithMockUser(roles = "ADMIN")
     public void testObtenerActivos() throws Exception {
         when(usuarioService.obtenerActivos()).thenReturn(List.of(responseDTO));
 
@@ -80,11 +88,14 @@ public class UsuarioControllerTest {
                 .andExpect(jsonPath("$._embedded").exists())
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
+
     @Test
+    @WithMockUser(roles = "ADMIN")
     public void testCrearUsuario() throws Exception {
         when(usuarioService.guardar(any(UsuarioRequestDTO.class))).thenReturn(responseDTO);
 
         mockMvc.perform(post("/api/usuarios")
+                        .with(csrf()) // Simulamos un token válido para modificar datos
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDTO))
                         .accept(MediaTypes.HAL_JSON_VALUE))
@@ -92,7 +103,9 @@ public class UsuarioControllerTest {
                 .andExpect(jsonPath("$.usuarioId").value(1L))
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
+
     @Test
+    @WithMockUser(roles = "ADMIN")
     public void testBuscarPorCorreo() throws Exception {
         when(usuarioService.buscarPorCorreo("leo@test.com")).thenReturn(responseDTO);
 
@@ -103,7 +116,9 @@ public class UsuarioControllerTest {
                 .andExpect(jsonPath("$.correo").value("leo@test.com"))
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
+
     @Test
+    @WithMockUser(roles = "ADMIN")
     public void testBuscarPorNombre() throws Exception {
         when(usuarioService.buscarPorNombreUsuario("leonel")).thenReturn(responseDTO);
 

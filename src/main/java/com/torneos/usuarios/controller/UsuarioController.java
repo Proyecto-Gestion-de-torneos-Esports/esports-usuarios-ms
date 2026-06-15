@@ -57,13 +57,9 @@ public class UsuarioController {
     @Operation(summary = "Crear un nuevo usuario", description = "Registra un usuario en el sistema y genera una auditoría.")
     @ApiResponse(responseCode = "201", description = "Usuario creado con éxito")
     @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ARBITRO')")
-    @PostMapping(produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<UsuarioResponseDTO>> crear(@Valid @RequestBody UsuarioRequestDTO dto){
-        UsuarioResponseDTO nuevoUsuario = usuarioService.guardar(dto);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .location(linkTo(methodOn(UsuarioController.class).buscarPorId(nuevoUsuario.getUsuarioId())).toUri())
-                .body(assembler.toModel(nuevoUsuario));
+    @PostMapping
+    public ResponseEntity<UsuarioResponseDTO> crear(@Valid @RequestBody UsuarioRequestDTO dto){
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @Operation(summary = "Actualizar usuario", description = "Modifica los datos de un usuario existente. Requiere permisos administrativos en el Header.")
