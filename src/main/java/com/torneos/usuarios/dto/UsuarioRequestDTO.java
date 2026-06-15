@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class UsuarioRequestDTO {
 
     @Id
-    private Long usuarioId;
+    private Long idUsuario;
 
     @NotBlank(message = "El nombre de usuario no puede estar vacío")
     @Size(min = 3, max = 20, message = "El nombre de usuario debe tener entre 3 y 20 caracteres")

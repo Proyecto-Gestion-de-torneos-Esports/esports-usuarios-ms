@@ -95,12 +95,12 @@ public class UsuarioControllerTest {
         when(usuarioService.guardar(any(UsuarioRequestDTO.class))).thenReturn(responseDTO);
 
         mockMvc.perform(post("/api/usuarios")
-                        .with(csrf()) // Simulamos un token válido para modificar datos
+                        .with(csrf()) // Simulamos un token válido para modificar datos en un POST
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDTO))
                         .accept(MediaTypes.HAL_JSON_VALUE))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.usuarioId").value(1L))
+                .andExpect(jsonPath("$.idUsuario").value(1L)) // Cambio clave: de $.usuarioId a $.idUsuario
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
 

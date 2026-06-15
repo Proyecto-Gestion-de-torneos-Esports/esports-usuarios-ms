@@ -25,7 +25,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
-@Tag(name = "Usuarios", description = "Endepoinst para la gestión de usuarios del sistema de gestión de Torneos Esports")
+@Tag(name = "Usuarios", description = "Endpoints para la gestión de usuarios del sistema de gestión de Torneos Esports")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
@@ -46,9 +46,10 @@ public class UsuarioController {
     @ApiResponse(responseCode = "200", description = "Usuario encontrado")
     @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
     @PreAuthorize("hasAnyRole('ADMIN', 'JUGADOR', 'ARBITRO', 'COACH')")
-    @GetMapping(value = "/{usuarioId}", produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<UsuarioResponseDTO>> buscarPorId(@PathVariable Long usuarioId){
-        return usuarioService.buscarPorId(usuarioId)
+    // CAMBIO 1: La ruta ahora es /{idUsuario}
+    @GetMapping(value = "/{idUsuario}", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<EntityModel<UsuarioResponseDTO>> buscarPorId(@PathVariable("idUsuario") Long idUsuario){
+        return usuarioService.buscarPorId(idUsuario)
                 .map(assembler::toModel)
                 .map(ResponseEntity::ok)
                 .orElseGet(()-> ResponseEntity.notFound().build());
@@ -57,20 +58,23 @@ public class UsuarioController {
     @Operation(summary = "Crear un nuevo usuario", description = "Registra un usuario en el sistema y genera una auditoría.")
     @ApiResponse(responseCode = "201", description = "Usuario creado con éxito")
     @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
-    @PostMapping
-    public ResponseEntity<UsuarioResponseDTO> crear(@Valid @RequestBody UsuarioRequestDTO dto){
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    // CAMBIO 2: Restauramos la lógica de guardado y el mapeo HATEOAS para que el test no falle
+    @PostMapping(produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<EntityModel<UsuarioResponseDTO>> crear(@Valid @RequestBody UsuarioRequestDTO dto){
+        UsuarioResponseDTO nuevoUsuario = usuarioService.guardar(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(assembler.toModel(nuevoUsuario));
     }
 
     @Operation(summary = "Actualizar usuario", description = "Modifica los datos de un usuario existente. Requiere permisos administrativos en el Header.")
     @ApiResponse(responseCode = "200", description = "Usuario actualizado correctamente")
     @ApiResponse(responseCode = "403", description = "Acceso denegado por rol insuficiente")
     @PreAuthorize("hasAnyRole('ADMIN', 'ARBITRO')")
-    @PutMapping(value = "/{usuarioId}", produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<UsuarioResponseDTO>> actualizar(@PathVariable Long usuarioId,
+    // CAMBIO 3: La ruta ahora es /{idUsuario}
+    @PutMapping(value = "/{idUsuario}", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<EntityModel<UsuarioResponseDTO>> actualizar(@PathVariable("idUsuario") Long idUsuario,
                                                                       @Valid @RequestBody UsuarioRequestDTO dto,
-                                                                      @RequestHeader("usuarioId") Long ejecutorId) {
-        UsuarioResponseDTO actualizado = usuarioService.actualizar(usuarioId, dto, ejecutorId);
+                                                                      @RequestHeader("idUsuario") Long ejecutorId) {
+        UsuarioResponseDTO actualizado = usuarioService.actualizar(idUsuario, dto, ejecutorId);
         return ResponseEntity.ok(assembler.toModel(actualizado));
     }
 
@@ -78,9 +82,10 @@ public class UsuarioController {
     @ApiResponse(responseCode = "204", description = "Usuario desactivado correctamente")
     @ApiResponse(responseCode = "403", description = "Acceso denegado por rol insuficiente")
     @PreAuthorize("hasAnyRole('ADMIN', 'ARBITRO')")
-    @DeleteMapping("/{usuarioId}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long usuarioId, @RequestHeader("usuarioId") Long ejecutorId) {
-        usuarioService.eliminar(usuarioId, ejecutorId);
+    // CAMBIO 4: La ruta ahora es /{idUsuario} y el header ejecutor homogeneizado a "idUsuario"
+    @DeleteMapping("/{idUsuario}")
+    public ResponseEntity<Void> eliminar(@PathVariable("idUsuario") Long idUsuario, @RequestHeader("idUsuario") Long ejecutorId) {
+        usuarioService.eliminar(idUsuario, ejecutorId);
         return ResponseEntity.noContent().build();
     }
 
@@ -112,5 +117,4 @@ public class UsuarioController {
     public ResponseEntity<EntityModel<UsuarioResponseDTO>> buscarPorNombreUsuario(@RequestParam String nombreUsuario){
         return ResponseEntity.ok(assembler.toModel(usuarioService.buscarPorNombreUsuario(nombreUsuario)));
     }
-
 }

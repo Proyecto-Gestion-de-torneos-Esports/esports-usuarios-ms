@@ -30,7 +30,7 @@ public class UsuarioService {
     //Usuario con sus respectivos atributos
     private UsuarioResponseDTO mapToDto(Usuario usuario){
         return new UsuarioResponseDTO(
-                usuario.getIdUsuario(),
+                usuario.getIdUsuario(), // CAMBIO: Actualizado a getIdUsuario()
                 usuario.getNombreUsuario(),
                 usuario.getCorreo(),
                 usuario.getRol(),
@@ -38,13 +38,14 @@ public class UsuarioService {
                 usuario.getEquipoId()
         );
     }
+
     //creamos un usuarios y el campo activo al iniciar siempre sera true y mandamos a auditoria.
     @Transactional
     public UsuarioResponseDTO guardar(UsuarioRequestDTO dto){
         validarEquipo(dto.getEquipoId());
 
         Usuario usuario = new Usuario();
-        usuario.setIdUsuario(dto.getUsuarioId());
+        usuario.setIdUsuario(dto.getIdUsuario()); // CAMBIO: Actualizado a getIdUsuario() según el RequestDTO
         usuario.setNombreUsuario(dto.getNombreUsuario());
         usuario.setCorreo(dto.getCorreo());
         usuario.setRol(dto.getRol());
@@ -60,6 +61,7 @@ public class UsuarioService {
         generarAuditoria(detalleAuditoria);
         return respuesta;
     }
+
     /*se listan todos.El campo transactional con readOnly true
      estamos diciendo que el metodo a continuacion solo es por ejemplo listar, buscar, etc.*/
     @Transactional(readOnly = true)
@@ -70,7 +72,7 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<UsuarioResponseDTO> buscarPorId(Long idUsuario){
+    public Optional<UsuarioResponseDTO> buscarPorId(Long idUsuario){ // CAMBIO: usuarioId -> idUsuario
         Optional<UsuarioResponseDTO> resultado = usuarioRepository.findByIdUsuarioAndActivoTrue(idUsuario).map(this::mapToDto);
 
         resultado.ifPresentOrElse(
@@ -79,8 +81,9 @@ public class UsuarioService {
         );
         return resultado;
     }
+
     @Transactional
-    public UsuarioResponseDTO actualizar(Long usuarioId, UsuarioRequestDTO dto, Long ejecutorId) {
+    public UsuarioResponseDTO actualizar(Long idUsuario, UsuarioRequestDTO dto, Long ejecutorId) { // CAMBIO: usuarioId -> idUsuario
         Usuario ejecutor = usuarioRepository.findByIdUsuarioAndActivoTrue(ejecutorId)
                 .orElseThrow(() -> new java.util.NoSuchElementException("El usuario ejecutor con ID " + ejecutorId + " no existe o está inactivo."));
         String rolEjecutor = ejecutor.getRol().name();
@@ -89,10 +92,10 @@ public class UsuarioService {
             log.warn("Intento de actualización no autorizado por el usuario ID: {}", ejecutorId);
             throw new IllegalArgumentException("Acceso denegado: Tu rol (" + rolEjecutor + ") no tiene permisos para actualizar usuarios.");
         }
-        Usuario existente = usuarioRepository.findByIdUsuarioAndActivoTrue(usuarioId)
+        Usuario existente = usuarioRepository.findByIdUsuarioAndActivoTrue(idUsuario) // CAMBIO: usuarioId -> idUsuario
                 .orElseThrow(() -> {
-                    log.warn("Actualización fallida: No se encontró ningún usuario activo con el ID: {}", usuarioId);
-                    return new java.util.NoSuchElementException("No se encontró ningún usuario activo con el ID: " + usuarioId);
+                    log.warn("Actualización fallida: No se encontró ningún usuario activo con el ID: {}", idUsuario); // CAMBIO
+                    return new java.util.NoSuchElementException("No se encontró ningún usuario activo con el ID: " + idUsuario); // CAMBIO
                 });
         existente.setNombreUsuario(dto.getNombreUsuario());
         existente.setCorreo(dto.getCorreo());
@@ -100,15 +103,16 @@ public class UsuarioService {
         Usuario usuarioGuardado = usuarioRepository.save(existente);
         UsuarioResponseDTO respuesta = mapToDto(usuarioGuardado);
         log.info("Usuario '{}' (ID: {}) actualizado correctamente por el ejecutor ID: {}",
-                respuesta.getNombreUsuario(), usuarioId, ejecutorId);
-        String detalleAuditoria = "Se actualizo el Usuario con el ID: " + usuarioId;
+                respuesta.getNombreUsuario(), idUsuario, ejecutorId); // CAMBIO
+        String detalleAuditoria = "Se actualizo el Usuario con el ID: " + idUsuario; // CAMBIO
         generarAuditoria(detalleAuditoria);
 
         return respuesta;
     }
+
     //Metodo con transactional sin readOnly true porque estamos realizando una accion que requiere ingresar datos
     @Transactional
-    public void eliminar(Long usuarioId, Long ejecutorId) {
+    public void eliminar(Long idUsuario, Long ejecutorId) { // CAMBIO: usuarioId -> idUsuario
         Usuario ejecutor = usuarioRepository.findByIdUsuarioAndActivoTrue(ejecutorId)
                 .orElseThrow(() -> new java.util.NoSuchElementException("El usuario ejecutor con ID " + ejecutorId + " no existe o está inactivo."));
         String rol = ejecutor.getRol().name();
@@ -116,24 +120,26 @@ public class UsuarioService {
             log.warn("Intento de eliminación no autorizado por el usuario ID: {}", ejecutorId);
             throw new IllegalArgumentException("Acceso denegado: Tu rol (" + rol + ") no tiene permisos para dar de baja a usuarios.");
         }
-        Usuario existente = usuarioRepository.findByIdUsuarioAndActivoTrue(usuarioId)
+        Usuario existente = usuarioRepository.findByIdUsuarioAndActivoTrue(idUsuario) // CAMBIO: usuarioId -> idUsuario
                 .orElseThrow(() -> {
-                    log.warn("Eliminación fallida: No se encontró ningún usuario activo con el ID: {}", usuarioId);
-                    return new java.util.NoSuchElementException("No se encontró ningún usuario activo con el ID: " + usuarioId);
+                    log.warn("Eliminación fallida: No se encontró ningún usuario activo con el ID: {}", idUsuario); // CAMBIO
+                    return new java.util.NoSuchElementException("No se encontró ningún usuario activo con el ID: " + idUsuario); // CAMBIO
                 });
         existente.setActivo(false);
         usuarioRepository.save(existente);
         log.info("Usuario '{}' (ID: {}) desactivado correctamente por el ejecutor ID: {}",
-                existente.getNombreUsuario(), usuarioId, ejecutorId);
-        String detalleAuditoria = "Se elimino el usuario con ID " + usuarioId;
+                existente.getNombreUsuario(), idUsuario, ejecutorId); // CAMBIO
+        String detalleAuditoria = "Se elimino el usuario con ID " + idUsuario; // CAMBIO
         generarAuditoria(detalleAuditoria);
     }
+
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> obtenerActivos(){
         List<Usuario> usuariosActivos = usuarioRepository.findByActivoTrue();
         log.info("Hay: {} usuarios activos", usuariosActivos.size());
         return usuariosActivos.stream().map(this::mapToDto).collect(Collectors.toList());
     }
+
     @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarPorCorreo(String correo){
         return usuarioRepository.findByCorreoAndActivoTrue(correo).map(usuario -> {
@@ -144,6 +150,7 @@ public class UsuarioService {
             return new java.util.NoSuchElementException("No se encontro ningun usuario activo con el correo: " + correo);
         });
     }
+
     @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarPorNombreUsuario(String nombreUsuario){
         return usuarioRepository.findByNombreUsuarioAndActivoTrue(nombreUsuario).map(usuario -> {
@@ -154,6 +161,7 @@ public class UsuarioService {
             return new java.util.NoSuchElementException("No se encontro ningun usuario activo con el nombre: " + nombreUsuario);
         });
     }
+
     private void validarEquipo(Long equipoId){
         if (equipoId != null){
             Map<String, Object> equipo = equipoClient.obtenerEquipoPorId(equipoId);
@@ -163,6 +171,7 @@ public class UsuarioService {
             log.info("Equipo ID {} validado con exito", equipoId);
         }
     }
+
     public void generarAuditoria(String detalle){
         AuditoriaRequestDTO dto = new AuditoriaRequestDTO();
         LocalDate ahora = LocalDate.now();
@@ -171,5 +180,4 @@ public class UsuarioService {
         auditoriaClient.generarAuditoria(dto);
         log.info("Auditoria generada con exito!");
     }
-
 }

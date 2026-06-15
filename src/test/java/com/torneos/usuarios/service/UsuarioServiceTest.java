@@ -71,7 +71,7 @@ public class UsuarioServiceTest {
 
     @Test
     public void testActualizarUsuario_AccesoDenegado() {
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdUsuarioAndActivoTrue(1L)).thenReturn(Optional.of(usuario));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             usuarioService.actualizar(2L, requestDTO, 1L); // El ejecutor 1 intenta actualizar al usuario 2
@@ -82,8 +82,8 @@ public class UsuarioServiceTest {
 
     @Test
     public void testEliminarUsuario_Exito() {
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(2L)).thenReturn(Optional.of(admin));
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(1L)).thenReturn(Optional.of(usuario)); // Usuario a eliminar
+        when(usuarioRepository.findByIdUsuarioAndActivoTrue(2L)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.findByIdUsuarioAndActivoTrue(1L)).thenReturn(Optional.of(usuario)); // Usuario a eliminar
 
         usuarioService.eliminar(1L, 2L);
 
@@ -104,18 +104,18 @@ public class UsuarioServiceTest {
     }
     @Test
     public void testBuscarPorId_Exito() {
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdUsuarioAndActivoTrue(1L)).thenReturn(Optional.of(usuario));
 
         Optional<UsuarioResponseDTO> response = usuarioService.buscarPorId(1L);
 
         assertTrue(response.isPresent());
         assertEquals("Jugador1", response.get().getNombreUsuario());
-        verify(usuarioRepository, times(1)).findByUsuarioIdAndActivoTrue(1L);
+        verify(usuarioRepository, times(1)).findByIdUsuarioAndActivoTrue(1L);
     }
 
     @Test
     public void testBuscarPorId_NoEncontrado() {
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(99L)).thenReturn(Optional.empty());
+        when(usuarioRepository.findByIdUsuarioAndActivoTrue(99L)).thenReturn(Optional.empty());
 
         Optional<UsuarioResponseDTO> response = usuarioService.buscarPorId(99L);
 
@@ -124,9 +124,9 @@ public class UsuarioServiceTest {
     @Test
     public void testActualizarUsuario_ExitoComoAdmin() {
         // Ejecutor es Admin (ID 2)
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(2L)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.findByIdUsuarioAndActivoTrue(2L)).thenReturn(Optional.of(admin));
         // Usuario a actualizar (ID 1)
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdUsuarioAndActivoTrue(1L)).thenReturn(Optional.of(usuario));
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
         when(auditoriaClient.generarAuditoria(any(AuditoriaRequestDTO.class))).thenReturn(null);
 
@@ -140,7 +140,7 @@ public class UsuarioServiceTest {
 
     @Test
     public void testActualizarUsuario_EjecutorNoExiste() {
-        when(usuarioRepository.findByUsuarioIdAndActivoTrue(99L)).thenReturn(Optional.empty());
+        when(usuarioRepository.findByIdUsuarioAndActivoTrue(99L)).thenReturn(Optional.empty());
 
         java.util.NoSuchElementException exception = assertThrows(java.util.NoSuchElementException.class, () -> {
             usuarioService.actualizar(1L, requestDTO, 99L);
